@@ -1,4 +1,6 @@
-import React, { useState, ChangeEvent } from 'react';
+import React, { useState, useEffect } from 'react';
+import api from './service/api';
+import QRCode from 'qrcode.react';
 
 function App() {
 
@@ -9,7 +11,14 @@ function App() {
     recieverIdentifier: '',
   })
 
-  const handleInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const [stringQrCode, setStringQrCode] = useState('')
+
+
+  useEffect(() => {
+    console.log('armazenado', stringQrCode)
+  }, [stringQrCode])
+
+  const handleInputChange = (event) => {
     const { name, value } = event.target;
 
     setFormData({
@@ -19,8 +28,31 @@ function App() {
     })
   }
 
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const { payerIdentifier, value, recieverIdentifier } = formData;
+
+    const data = { 
+      payerIdentifier,
+      value, 
+      recieverIdentifier
+    };
+    console.log(data);
+
+    await api.post('/transactions', data)
+    .then(function (response) {
+      console.log('Resp:', response.data);
+      setStringQrCode(response.data.qrCodeString)
+    })
+    .catch(function (error) {
+      console.log(error);
+    });
+   
+  }
+
   return (
-    <form>
+    <form onSubmit={handleSubmit}>
       <div className="field">
         <label htmlFor="payerIdentifier">Identificação do Pagador</label>
         <input 
@@ -48,6 +80,14 @@ function App() {
           onChange={handleInputChange}
         />
       </div>
+
+      <button type="submit">
+          Realizar Transferencia
+      </button>
+      {
+        stringQrCode ?
+        <QRCode value={stringQrCode} />: ''
+      }
     </form>
   );
 }
